@@ -18,6 +18,9 @@ type RouteRegistry struct {
 // RegisterAppRoutes initializes router and registers all centralized routes
 func RegisterAppRoutes(services *container.ServiceContainer, jwtHelper *helper.JWT) *chi.Mux {
 	router := chi.NewRouter()
+	router.Use(LoggingMiddleware)
+	router.Use(middlewares.GlobalExceptionHandler)
+
 	registry := &RouteRegistry{}
 
 	// get all routes from centralized route package
@@ -39,7 +42,7 @@ func (r *RouteRegistry) RegisterAll(router *chi.Mux, jwtHelper *helper.JWT) {
 	// default middleware stack (logging, recovery)
 	defaultMiddlewares := []func(http.Handler) http.Handler{
 		LoggingMiddleware,
-		RecoveryMiddleware,
+		middlewares.GlobalExceptionHandler,
 	}
 
 	for _, route := range r.Routes {
@@ -74,14 +77,13 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// RecoveryMiddleware recovers from panics
-func RecoveryMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if err := recover(); err != nil {
-				http.Error(w, "Internal server error", http.StatusInternalServerError)
-			}
-		}()
-		next.ServeHTTP(w, r)
-	})
+// custom response writer
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
 }

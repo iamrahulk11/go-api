@@ -1,28 +1,39 @@
 package middlewares
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
 	"user-mapping/domain/dto"
-
-	"github.com/gin-gonic/gin"
 )
 
-func ErrorHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Next()
+func GlobalExceptionHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		if len(c.Errors) > 0 {
-			err := c.Errors[0].Error()
+		defer func() {
+			if err := recover(); err != nil {
+				// log actual error
+				log.Printf("[PANIC] %v", err)
 
-			response := dto.BaseResponseDto[any]{
-				Result: dto.ResultResponseDto{
-					Flag:        0,
-					FlagMessage: err,
-				},
+				// always return 500
+				writeError(w, http.StatusInternalServerError, "Internal server error")
 			}
+		}()
 
-			c.JSON(http.StatusBadRequest, response)
-			c.Abort()
-		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func writeError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	response := dto.BaseResponseDto[any]{
+		Result: dto.ResultResponseDto{
+			Flag:        0,
+			FlagMessage: message,
+		},
 	}
+
+	json.NewEncoder(w).Encode(response)
 }
