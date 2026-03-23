@@ -46,9 +46,11 @@ func CentralizedRoutes(services *container.ServiceContainer, jwtHelper *helper.J
 			Auth:        true,
 		},
 		{
-			Path:        "/profile",
-			Method:      "GET",
-			Handler:     helper.WrapHandlerWithQuery(api.UserHandler(services.UserService).FetchUserProfile),
+			Path:   "/profile",
+			Method: "GET",
+			Handler: helper.WrapQueryHandler(
+				api.UserHandler(services.UserService).FetchUserProfile,
+			),
 			Middlewares: []func(http.Handler) http.Handler{},
 			Auth:        true,
 		},
