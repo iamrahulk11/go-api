@@ -1,18 +1,17 @@
-package router
+package routes
 
 import (
 	"net/http"
 	"user-mapping/helper"
 	"user-mapping/internal/container"
 	middlewares "user-mapping/internal/middleware"
-	routes "user-mapping/internal/register_routes/route"
 
 	"github.com/go-chi/chi/v5"
 )
 
 // RouteRegistry stores all routes
 type RouteRegistry struct {
-	Routes []routes.Route
+	Routes []Route
 }
 
 // RegisterAppRoutes initializes router and registers all centralized routes
@@ -24,7 +23,7 @@ func RegisterAppRoutes(services *container.ServiceContainer, jwtHelper *helper.J
 	registry := &RouteRegistry{}
 
 	// get all routes from centralized route package
-	allRoutes := routes.CentralizedRoutes(services, jwtHelper)
+	allRoutes := CentralizedRoutes(services, jwtHelper)
 
 	// add all routes to registry
 	for _, r := range allRoutes {
