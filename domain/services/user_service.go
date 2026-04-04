@@ -1,6 +1,7 @@
 package services
 
 import (
+	"user-mapping/domain/dto"
 	request "user-mapping/domain/dto/requests/user"
 	response "user-mapping/domain/dto/response/user"
 	"user-mapping/domain/interfaces"
@@ -19,19 +20,47 @@ func NewUserService(jwtHelper *helper.JWT, iUserService interfaces.IUserService)
 	}
 }
 
-func (s *UserServiceStruct) UserService() (*response.AllUserResponse, error) {
+func (s *UserServiceStruct) UserService() dto.BaseResponseDto[*response.AllUserResponse] {
 	allUserResponse, err := s.iUserService.FetchAllUser()
 	if err != nil {
-		return allUserResponse, err
+		// Return failure response
+		return dto.BaseResponseDto[*response.AllUserResponse]{
+			Result: dto.ResultResponseDto{
+				Flag:        0,
+				FlagMessage: err.Error(),
+			},
+			Data: nil,
+		}
 	}
 
-	return allUserResponse, nil
+	// Return success response
+	return dto.BaseResponseDto[*response.AllUserResponse]{
+		Result: dto.ResultResponseDto{
+			Flag:        1,
+			FlagMessage: "Success",
+		},
+		Data: allUserResponse,
+	}
 }
-func (s *UserServiceStruct) FetchUserProfileDetails(request request.FetchUserProfileRequestDto) (*response.UserBasicDetailsResponse, error) {
-	allUserResponse, err := s.iUserService.FetchUserProfile(request.EmployeeID)
+func (s *UserServiceStruct) FetchUserProfileDetails(request request.FetchUserProfileRequestDto) dto.BaseResponseDto[*response.UserBasicDetailsResponse] {
+	userProfile, err := s.iUserService.FetchUserProfile(request.EmployeeID)
 	if err != nil {
-		return allUserResponse, err
+		// Return failure response
+		return dto.BaseResponseDto[*response.UserBasicDetailsResponse]{
+			Result: dto.ResultResponseDto{
+				Flag:        0,
+				FlagMessage: err.Error(),
+			},
+			Data: nil,
+		}
 	}
 
-	return allUserResponse, nil
+	// Return success response
+	return dto.BaseResponseDto[*response.UserBasicDetailsResponse]{
+		Result: dto.ResultResponseDto{
+			Flag:        1,
+			FlagMessage: "Success",
+		},
+		Data: userProfile,
+	}
 }

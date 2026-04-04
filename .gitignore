@@ -5,7 +5,8 @@
 /.vs
 cmd/api/__debug_bin.exe
 appsettings.Development.json
-api.exe
+appsettings.json
+*exe
 .vscode/launch.json
 .vscode/tasks.json
 bin

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"user-mapping/domain/dto"
 	request "user-mapping/domain/dto/requests/login"
 	"user-mapping/domain/services"
 
@@ -19,23 +18,10 @@ func LoginHandler(services *services.LoginServiceStruct) *LoginHandlerStruct {
 // VerifyUser now accepts the parsed request DTO
 func (h *LoginHandlerStruct) VerifyUser(c *gin.Context, loginReq request.VerifyLoginRequestDto) {
 	// Call service
-	result, err := h.services.VerifyUserService(loginReq)
-	if err != nil {
-		c.JSON(400, dto.BaseResponseDto[any]{
-			Result: dto.ResultResponseDto{
-				Flag:        0,
-				FlagMessage: err.Error(),
-			},
-		})
-		return
+	result := h.services.VerifyUserService(loginReq)
+	status := 200
+	if result.Result.Flag == 0 {
+		status = 400
 	}
-
-	// Success
-	c.JSON(200, dto.BaseResponseDto[any]{
-		Result: dto.ResultResponseDto{
-			Flag:        1,
-			FlagMessage: "Success",
-		},
-		Data: result,
-	})
+	c.JSON(status, result)
 }

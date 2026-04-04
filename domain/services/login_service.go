@@ -1,7 +1,7 @@
 package services
 
 import (
-	"errors"
+	"user-mapping/domain/dto"
 	request "user-mapping/domain/dto/requests/login"
 	response "user-mapping/domain/dto/response/login"
 	"user-mapping/domain/interfaces"
@@ -20,14 +20,27 @@ func NewLoginService(jwtHelper *helper.JWT, iLoginService interfaces.ILoginServi
 	}
 }
 
-func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestDto) (response.JWTResponse, error) {
+func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestDto) dto.BaseResponseDto[*response.JWTResponse] {
 	isValid, err := s.iLoginService.VerifyUserRepo(Login)
 	if err != nil {
-		return response.JWTResponse{}, err
+		// Return failure response
+		return dto.BaseResponseDto[*response.JWTResponse]{
+			Result: dto.ResultResponseDto{
+				Flag:        0,
+				FlagMessage: err.Error(),
+			},
+			Data: nil,
+		}
 	}
 
 	if !isValid {
-		return response.JWTResponse{}, errors.New("invalid credentials")
+		return dto.BaseResponseDto[*response.JWTResponse]{
+			Result: dto.ResultResponseDto{
+				Flag:        0,
+				FlagMessage: ("invalid credentials"),
+			},
+			Data: nil,
+		}
 	}
 
 	// User verified → create JWT
@@ -36,11 +49,16 @@ func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestD
 		"role":   "admin",
 	})
 
-	if err != nil {
-		return response.JWTResponse{}, err
+	resp := response.JWTResponse{
+		Token: token,
 	}
 
-	return response.JWTResponse{
-		Token: token,
-	}, nil
+	// Return success response
+	return dto.BaseResponseDto[*response.JWTResponse]{
+		Result: dto.ResultResponseDto{
+			Flag:        1,
+			FlagMessage: "Success",
+		},
+		Data: &resp,
+	}
 }

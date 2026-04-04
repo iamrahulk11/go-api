@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -12,32 +11,48 @@ import (
 )
 
 func main() {
-	// configure env
-	working_directory, err := os.Getwd()
+	// Get working directory
+	workingDirectory, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// fetch env
-	env := os.Getenv("APP_ENV")
+	// Base config path
+	baseConfigPath := filepath.Join(workingDirectory, "appsettings.json")
 
-	configPath := filepath.Join(working_directory, fmt.Sprintf("appsettings.%s.json", env))
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		configPath = "appsettings.Development.json"
-	}
-
-	cfg, err := config.LoadConfig(configPath)
+	// Load configuration (LoadConfig will handle APP_ENV internally)
+	cfg, err := config.LoadConfig(baseConfigPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error loading config: %v", err)
 	}
 
+	// Initialize containers
 	serviceContainer, jwtHelper, err := container.InitializeContainers(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize containers: %v", err)
 	}
 
-	routes := routes.RegisterAppRoutes(serviceContainer, jwtHelper)
+	// Register routes
+	router := routes.RegisterAppRoutes(serviceContainer, jwtHelper)
 
-	log.Println("Server started on :8080")
-	log.Fatal(http.ListenAndServe(":8080", routes))
+	// Use PORT from env first, fallback to config, then default
+	port := os.Getenv("PORT")
+	if port == "" {
+		if cfg.Port != "" {
+			port = cfg.Port
+		} else {
+			port = "5001"
+		}
+	}
+
+	// Create and start HTTP server
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: router,
+		// ReadTimeout:  10 * time.Second,
+		// WriteTimeout: 10 * time.Second,
+	}
+
+	log.Printf("Server started on port %s in %s environment", port, cfg.AppEnv)
+	log.Fatal(srv.ListenAndServe())
 }

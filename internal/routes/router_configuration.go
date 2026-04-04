@@ -19,7 +19,7 @@ func RegisterAppRoutes(services *container.ServiceContainer, jwtHelper *helper.J
 	router := gin.New()
 
 	// global middlewares
-	router.Use(LoggingMiddleware(), middlewares.GlobalExceptionHandler())
+	router.Use(middlewares.LoggingMiddleware(), middlewares.GlobalExceptionHandler())
 
 	registry := &RouteRegistry{}
 
@@ -37,9 +37,6 @@ func (r *RouteRegistry) RegisterAll(router *gin.Engine, jwtHelper *helper.JWT) {
 	for _, route := range r.Routes {
 
 		handlers := []gin.HandlerFunc{}
-
-		// default middleware
-		handlers = append(handlers, LoggingMiddleware(), middlewares.GlobalExceptionHandler())
 
 		// route-specific middleware
 		handlers = append(handlers, route.Middlewares...)
@@ -65,14 +62,6 @@ func (r *RouteRegistry) RegisterAll(router *gin.Engine, jwtHelper *helper.JWT) {
 		default:
 			router.Any(route.Path, handlers...)
 		}
-	}
-}
-
-// LoggingMiddleware logs basic info about requests
-func LoggingMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		println("Request:", c.Request.Method, c.Request.URL.Path)
-		c.Next()
 	}
 }
 
