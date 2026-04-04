@@ -1,83 +1,88 @@
 package helper
 
 import (
-	"encoding/json"
-	"net/http"
-	"user-mapping/domain/dto"
-	"user-mapping/domain/validator"
+	"fmt"
+	base_response "user-mapping/domain/dto"
 
-	"github.com/gorilla/schema"
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
-type HandlerWithDTO[T any] func(w http.ResponseWriter, dto T)
+var validate = validator.New()
 
-func WrapHandlerWithDTO[T any](handler func(http.ResponseWriter, T)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var dtoReq T
-		w.Header().Set("Content-Type", "application/json")
-
-		// Decode
-		if err := json.NewDecoder(r.Body).Decode(&dtoReq); err != nil {
-			writeError(w, "invalid request body")
-			return
-		}
-
-		// Validate
-		if err := validator.Validate.Struct(dtoReq); err != nil {
-			validationErrors := validator.FormatValidationErrors(err)
-
-			msg := ""
-			for _, v := range validationErrors {
-				msg += v + "; "
-			}
-
-			writeError(w, msg)
-			return
-		}
-
-		handler(w, dtoReq)
-	}
-}
-
-func WrapQueryHandler[T any](handler func(http.ResponseWriter, *http.Request, T)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
+func BindJsonRequestAndValidate[T any](handler func(*gin.Context, T)) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		var dto T
 
-		decoder := schema.NewDecoder()
-		decoder.IgnoreUnknownKeys(true)
-
-		// Bind
-		if err := decoder.Decode(&dto, r.URL.Query()); err != nil {
-			//writeError(w, "invalid query parameters")
-			//return
-		}
-
-		// Validate
-		if err := validator.Validate.Struct(dto); err != nil {
-			validationErrors := validator.FormatValidationErrors(err)
-
-			msg := ""
-			for _, v := range validationErrors {
-				msg += v + "; "
-			}
-
-			writeError(w, msg)
+		// Bind JSON
+		if err := c.ShouldBindJSON(&dto); err != nil {
+			c.JSON(400, base_response.BaseResponseDto[any]{
+				Result: base_response.ResultResponseDto{
+					Flag:        0,
+					FlagMessage: err.Error(),
+				},
+			})
 			return
 		}
 
-		// ✅ Pass validated DTO to handler
-		handler(w, r, dto)
+		// Validate required fields
+		if err := validate.Struct(dto); err != nil {
+			c.JSON(400, base_response.BaseResponseDto[any]{
+				Result: base_response.ResultResponseDto{
+					Flag:        0,
+					FlagMessage: ValidationErrorToMessage(err),
+				},
+			})
+			return
+		}
+
+		// Call actual handler with bound and validated DTO
+		handler(c, dto)
 	}
 }
 
-func writeError(w http.ResponseWriter, message string) {
-	w.WriteHeader(http.StatusBadRequest)
+func BindFromQueryRequestAndValidate[T any](handler func(*gin.Context, T)) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var dto T
+		if err := c.ShouldBindQuery(&dto); err != nil {
+			c.JSON(400, base_response.BaseResponseDto[any]{
+				Result: base_response.ResultResponseDto{
+					Flag:        0,
+					FlagMessage: ValidationErrorToMessage(err),
+				},
+			})
+			return
+		}
 
-	_ = json.NewEncoder(w).Encode(dto.BaseResponseDto[any]{
-		Result: dto.ResultResponseDto{
-			Flag:        0,
-			FlagMessage: message,
-		},
-	})
+		if err := validate.Struct(dto); err != nil {
+			c.JSON(400, base_response.BaseResponseDto[any]{
+				Result: base_response.ResultResponseDto{
+					Flag:        0,
+					FlagMessage: ValidationErrorToMessage(err),
+				},
+			})
+			return
+		}
+
+		handler(c, dto)
+	}
+}
+
+// Returns a user-friendly error message
+func ValidationErrorToMessage(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	if errs, ok := err.(validator.ValidationErrors); ok {
+		for _, e := range errs {
+			key := fmt.Sprintf("%s.%s", e.Field(), e.Tag())
+			if msg, exists := customMessages[key]; exists {
+				return msg
+			}
+			// default fallback
+			return fmt.Sprintf("Field %s failed validation on %s", e.Field(), e.Tag())
+		}
+	}
+	return err.Error()
 }

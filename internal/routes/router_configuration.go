@@ -6,7 +6,7 @@ import (
 	"user-mapping/internal/container"
 	middlewares "user-mapping/internal/middleware"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/gin-gonic/gin"
 )
 
 // RouteRegistry stores all routes
@@ -15,65 +15,65 @@ type RouteRegistry struct {
 }
 
 // RegisterAppRoutes initializes router and registers all centralized routes
-func RegisterAppRoutes(services *container.ServiceContainer, jwtHelper *helper.JWT) *chi.Mux {
-	router := chi.NewRouter()
-	router.Use(LoggingMiddleware)
-	router.Use(middlewares.GlobalExceptionHandler)
+func RegisterAppRoutes(services *container.ServiceContainer, jwtHelper *helper.JWT) *gin.Engine {
+	router := gin.New()
+
+	// global middlewares
+	router.Use(LoggingMiddleware(), middlewares.GlobalExceptionHandler())
 
 	registry := &RouteRegistry{}
 
-	// get all routes from centralized route package
 	allRoutes := CentralizedRoutes(services, jwtHelper)
 
-	// add all routes to registry
-	for _, r := range allRoutes {
-		registry.Routes = append(registry.Routes, r)
-	}
+	registry.Routes = append(registry.Routes, allRoutes...)
 
-	// register all routes with middlewares, auth, etc.
 	registry.RegisterAll(router, jwtHelper)
 
 	return router
 }
 
-// RegisterAll registers all routes into the Chi router
-func (r *RouteRegistry) RegisterAll(router *chi.Mux, jwtHelper *helper.JWT) {
-	// default middleware stack (logging, recovery)
-	defaultMiddlewares := []func(http.Handler) http.Handler{
-		LoggingMiddleware,
-		middlewares.GlobalExceptionHandler,
-	}
+func (r *RouteRegistry) RegisterAll(router *gin.Engine, jwtHelper *helper.JWT) {
 
 	for _, route := range r.Routes {
-		var h http.Handler = route.Handler
 
-		// apply default middlewares
-		for _, mw := range defaultMiddlewares {
-			h = mw(h)
-		}
+		handlers := []gin.HandlerFunc{}
 
-		// apply route-specific middlewares
-		for _, mw := range route.Middlewares {
-			h = mw(h)
-		}
+		// default middleware
+		handlers = append(handlers, LoggingMiddleware(), middlewares.GlobalExceptionHandler())
 
-		// auto-apply auth middleware if Auth is true
+		// route-specific middleware
+		handlers = append(handlers, route.Middlewares...)
+
+		// auth middleware
 		if route.Auth {
-			jwtMiddleware := &middlewares.JWTMiddleware{JWT: jwtHelper}
-			h = jwtMiddleware.Handle(h)
+			handlers = append(handlers, middlewares.JWTMiddleware(jwtHelper))
 		}
 
-		// register route based on method
-		router.Method(route.Method, route.Path, h)
+		// final handler
+		handlers = append(handlers, route.Handler)
+
+		// register based on method
+		switch route.Method {
+		case "GET":
+			router.GET(route.Path, handlers...)
+		case "POST":
+			router.POST(route.Path, handlers...)
+		case "PUT":
+			router.PUT(route.Path, handlers...)
+		case "DELETE":
+			router.DELETE(route.Path, handlers...)
+		default:
+			router.Any(route.Path, handlers...)
+		}
 	}
 }
 
 // LoggingMiddleware logs basic info about requests
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		println("Request:", r.Method, r.URL.Path)
-		next.ServeHTTP(w, r)
-	})
+func LoggingMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		println("Request:", c.Request.Method, c.Request.URL.Path)
+		c.Next()
+	}
 }
 
 // custom response writer

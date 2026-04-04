@@ -28,7 +28,7 @@ func (s *UserServiceStruct) UserService() (*response.AllUserResponse, error) {
 	return allUserResponse, nil
 }
 func (s *UserServiceStruct) FetchUserProfileDetails(request request.FetchUserProfileRequestDto) (*response.UserBasicDetailsResponse, error) {
-	allUserResponse, err := s.iUserService.FetchUserProfile(request.Employee_id)
+	allUserResponse, err := s.iUserService.FetchUserProfile(request.EmployeeID)
 	if err != nil {
 		return allUserResponse, err
 	}

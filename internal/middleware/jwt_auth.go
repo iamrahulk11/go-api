@@ -1,50 +1,43 @@
 package middlewares
 
 import (
-	"context"
-	"net/http"
 	"strings"
 
 	"user-mapping/helper"
+
+	"github.com/gin-gonic/gin"
 )
 
-type JWTMiddleware struct {
-	JWT *helper.JWT
-}
+func JWTMiddleware(jwtHelper *helper.JWT) gin.HandlerFunc {
+	return func(c *gin.Context) {
 
-func (m *JWTMiddleware) Handle(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		authHeader := r.Header.Get("Authorization")
+		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			http.Error(w, "authorization header missing", http.StatusUnauthorized)
+			c.AbortWithStatusJSON(401, gin.H{"error": "authorization header missing"})
 			return
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		claims, err := m.JWT.ValidateToken(tokenString)
+		claims, err := jwtHelper.ValidateToken(tokenString)
 		if err != nil {
-			http.Error(w, "invalid token", http.StatusUnauthorized)
+			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token"})
 			return
 		}
 
-		ctx := r.Context()
-		ctx = WithClaims(ctx, claims)
+		// store claims in gin context
+		c.Set("jwtClaims", claims)
 
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+		c.Next()
+	}
 }
 
-type claimsKeyType string
+func GetClaims(c *gin.Context) (map[string]interface{}, bool) {
+	claims, exists := c.Get("jwtClaims")
+	if !exists {
+		return nil, false
+	}
 
-const claimsKey claimsKeyType = "jwtClaims"
-
-func WithClaims(ctx context.Context, claims map[string]interface{}) context.Context {
-	return context.WithValue(ctx, claimsKey, claims)
-}
-
-func GetClaims(ctx context.Context) (map[string]interface{}, bool) {
-	claims, ok := ctx.Value(claimsKey).(map[string]interface{})
-	return claims, ok
+	data, ok := claims.(map[string]interface{})
+	return data, ok
 }

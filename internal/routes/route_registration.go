@@ -1,10 +1,12 @@
 package routes
 
 import (
-	"net/http"
 	"user-mapping/api"
-	"user-mapping/helper"
+	contract "user-mapping/domain/dto"
+	helper "user-mapping/helper"
 	"user-mapping/internal/container"
+
+	"github.com/gin-gonic/gin"
 )
 
 // ParamMode defines how request parameters are passed
@@ -20,39 +22,37 @@ const (
 type Route struct {
 	Path        string
 	Method      string
-	Handler     http.HandlerFunc
-	Middlewares []func(http.Handler) http.Handler
-	ParamMode   ParamMode
+	Handler     gin.HandlerFunc
+	Middlewares []gin.HandlerFunc
 	Auth        bool
-	DTO         any
 }
 
 // CentralizedRoutes returns all routes for the app
 func CentralizedRoutes(services *container.ServiceContainer, jwtHelper *helper.JWT) []Route {
-
 	return []Route{
 		{
-			Path:        "/login",
-			Method:      "POST",
-			Handler:     helper.WrapHandlerWithDTO(api.LoginHandler(services.LoginService).VerifyUser),
-			Middlewares: []func(http.Handler) http.Handler{},
-			Auth:        false,
+			Path:   "/login",
+			Method: "POST",
+			Handler: helper.BindJsonRequestAndValidate(func(c *gin.Context, req contract.VerifyLoginRequest) {
+				api.LoginHandler(services.LoginService).VerifyUser(c, req)
+			}),
+			Auth: false,
 		},
 		{
-			Path:        "/user",
-			Method:      "GET",
-			Handler:     api.UserHandler(services.UserService).User,
-			Middlewares: []func(http.Handler) http.Handler{},
-			Auth:        true,
+			Path:   "/user",
+			Method: "GET",
+			Handler: func(c *gin.Context) {
+				api.UserHandler(services.UserService).User(c, c.Request)
+			},
+			Auth: true,
 		},
 		{
 			Path:   "/profile",
 			Method: "GET",
-			Handler: helper.WrapQueryHandler(
-				api.UserHandler(services.UserService).FetchUserProfile,
-			),
-			Middlewares: []func(http.Handler) http.Handler{},
-			Auth:        true,
+			Handler: helper.BindFromQueryRequestAndValidate(func(c *gin.Context, req contract.FetchUserProfileRequest) {
+				api.UserHandler(services.UserService).FetchUserProfile(c, req)
+			}),
+			Auth: true,
 		},
 	}
 }

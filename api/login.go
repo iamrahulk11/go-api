@@ -1,11 +1,11 @@
 package api
 
 import (
-	"encoding/json"
-	"net/http"
 	"user-mapping/domain/dto"
 	request "user-mapping/domain/dto/requests/login"
 	"user-mapping/domain/services"
+
+	"github.com/gin-gonic/gin"
 )
 
 type LoginHandlerStruct struct {
@@ -17,12 +17,11 @@ func LoginHandler(services *services.LoginServiceStruct) *LoginHandlerStruct {
 }
 
 // VerifyUser now accepts the parsed request DTO
-func (h *LoginHandlerStruct) VerifyUser(w http.ResponseWriter, loginReq request.VerifyLoginRequestDto) {
+func (h *LoginHandlerStruct) VerifyUser(c *gin.Context, loginReq request.VerifyLoginRequestDto) {
+	// Call service
 	result, err := h.services.VerifyUserService(loginReq)
-
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(dto.BaseResponseDto[any]{
+		c.JSON(400, dto.BaseResponseDto[any]{
 			Result: dto.ResultResponseDto{
 				Flag:        0,
 				FlagMessage: err.Error(),
@@ -32,7 +31,7 @@ func (h *LoginHandlerStruct) VerifyUser(w http.ResponseWriter, loginReq request.
 	}
 
 	// Success
-	json.NewEncoder(w).Encode(dto.BaseResponseDto[any]{
+	c.JSON(200, dto.BaseResponseDto[any]{
 		Result: dto.ResultResponseDto{
 			Flag:        1,
 			FlagMessage: "Success",

@@ -5,10 +5,12 @@ import (
 	"log"
 	"net/http"
 	"user-mapping/domain/dto"
+
+	"github.com/gin-gonic/gin"
 )
 
-func GlobalExceptionHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func GlobalExceptionHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
 
 		defer func() {
 			if err := recover(); err != nil {
@@ -16,12 +18,12 @@ func GlobalExceptionHandler(next http.Handler) http.Handler {
 				log.Printf("[PANIC] %v", err)
 
 				// always return 500
-				writeError(w, http.StatusInternalServerError, "Internal server error")
+				writeError(c.Writer, http.StatusInternalServerError, "Internal server error")
 			}
 		}()
 
-		next.ServeHTTP(w, r)
-	})
+		c.Next()
+	}
 }
 
 func writeError(w http.ResponseWriter, status int, message string) {

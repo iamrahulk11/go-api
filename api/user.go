@@ -1,11 +1,12 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 	"user-mapping/domain/dto"
-	request "user-mapping/domain/dto/requests/user"
+	profileRequest "user-mapping/domain/dto/requests/user"
 	"user-mapping/domain/services"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UserHandlerStruct struct {
@@ -17,25 +18,10 @@ func UserHandler(services *services.UserServiceStruct) *UserHandlerStruct {
 }
 
 // VerifyUser now accepts the parsed request DTO
-func (h *UserHandlerStruct) User(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandlerStruct) User(c *gin.Context, r *http.Request) {
 	result, err := h.services.UserService()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(result); err != nil {
-		http.Error(w, "failed to encode response", http.StatusInternalServerError)
-	}
-}
-
-func (h *UserHandlerStruct) FetchUserProfile(w http.ResponseWriter, r *http.Request, req request.FetchUserProfileRequestDto) {
-	// Call service
-	result, err := h.services.FetchUserProfileDetails(req)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(dto.BaseResponseDto[any]{
+		c.JSON(400, dto.BaseResponseDto[any]{
 			Result: dto.ResultResponseDto{
 				Flag:        0,
 				FlagMessage: err.Error(),
@@ -45,7 +31,30 @@ func (h *UserHandlerStruct) FetchUserProfile(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Success
-	json.NewEncoder(w).Encode(dto.BaseResponseDto[any]{
+	c.JSON(200, dto.BaseResponseDto[any]{
+		Result: dto.ResultResponseDto{
+			Flag:        1,
+			FlagMessage: "Success",
+		},
+		Data: result,
+	})
+}
+
+func (h *UserHandlerStruct) FetchUserProfile(c *gin.Context, req profileRequest.FetchUserProfileRequestDto) {
+	// Call service
+	result, err := h.services.FetchUserProfileDetails(req)
+	if err != nil {
+		c.JSON(400, dto.BaseResponseDto[any]{
+			Result: dto.ResultResponseDto{
+				Flag:        0,
+				FlagMessage: err.Error(),
+			},
+		})
+		return
+	}
+
+	// Success
+	c.JSON(200, dto.BaseResponseDto[any]{
 		Result: dto.ResultResponseDto{
 			Flag:        1,
 			FlagMessage: "Success",
