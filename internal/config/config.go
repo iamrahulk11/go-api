@@ -31,17 +31,17 @@ func LoadConfig(baseFilePath string) (*AppConfig, error) {
 		return nil, err
 	}
 
-	// Load environment-specific config if APP_ENV is set
-	if config.AppEnv != "" {
-		envFilePath := fmt.Sprintf("appsettings.%s.json", config.AppEnv)
-		if _, err := os.Stat(envFilePath); err == nil {
-			envConfig, err := loadFile(envFilePath)
-			if err != nil {
-				return nil, err
-			}
-			config = envConfig // just replace it entirely
-		}
-	}
+	// // Load environment-specific config if APP_ENV is set
+	// if config.AppEnv != "" {
+	// 	envFilePath := fmt.Sprintf("appsettings.%s.json", config.AppEnv)
+	// 	if _, err := os.Stat(envFilePath); err == nil {
+	// 		envConfig, err := loadFile(envFilePath)
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+	// 		config = envConfig // just replace it entirely
+	// 	}
+	// }
 
 	return config, nil
 }

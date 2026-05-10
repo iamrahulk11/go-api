@@ -27,7 +27,7 @@ func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestD
 		return dto.BaseResponseDto[*response.JWTResponse]{
 			Result: dto.ResultResponseDto{
 				Flag:        0,
-				FlagMessage: err.Error(),
+				FlagMessage: helper.DATA_NO_FOUND,
 			},
 			Data: nil,
 		}
@@ -37,7 +37,7 @@ func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestD
 		return dto.BaseResponseDto[*response.JWTResponse]{
 			Result: dto.ResultResponseDto{
 				Flag:        0,
-				FlagMessage: ("invalid credentials"),
+				FlagMessage: helper.INVALID_CREDENTIALS,
 			},
 			Data: nil,
 		}
@@ -57,7 +57,7 @@ func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestD
 	return dto.BaseResponseDto[*response.JWTResponse]{
 		Result: dto.ResultResponseDto{
 			Flag:        1,
-			FlagMessage: "Success",
+			FlagMessage: helper.DATA_FOUND,
 		},
 		Data: &resp,
 	}

@@ -3,8 +3,9 @@ package routes
 import (
 	"user-mapping/api"
 	contract "user-mapping/domain/dto"
-	helper "user-mapping/helper"
+	"user-mapping/helper"
 	"user-mapping/internal/container"
+	"user-mapping/internal/routes/handler"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +34,7 @@ func CentralizedRoutes(services *container.ServiceContainer, jwtHelper *helper.J
 		{
 			Path:   "/login",
 			Method: "POST",
-			Handler: helper.BindJsonRequestAndValidate(func(c *gin.Context, req contract.VerifyLoginRequest) {
+			Handler: handler.BindJsonRequestAndValidate(func(c *gin.Context, req contract.VerifyLoginRequest) {
 				api.LoginHandler(services.LoginService).VerifyUser(c, req)
 			}),
 			Auth: false,
@@ -49,7 +50,7 @@ func CentralizedRoutes(services *container.ServiceContainer, jwtHelper *helper.J
 		{
 			Path:   "/profile",
 			Method: "GET",
-			Handler: helper.BindFromQueryRequestAndValidate(func(c *gin.Context, req contract.FetchUserProfileRequest) {
+			Handler: handler.BindFromQueryRequestAndValidate(func(c *gin.Context, req contract.FetchUserProfileRequest) {
 				api.UserHandler(services.UserService).FetchUserProfile(c, req)
 			}),
 			Auth: true,

@@ -27,7 +27,7 @@ func (s *UserServiceStruct) UserService() dto.BaseResponseDto[*response.AllUserR
 		return dto.BaseResponseDto[*response.AllUserResponse]{
 			Result: dto.ResultResponseDto{
 				Flag:        0,
-				FlagMessage: err.Error(),
+				FlagMessage: helper.DATA_NO_FOUND,
 			},
 			Data: nil,
 		}
@@ -37,7 +37,7 @@ func (s *UserServiceStruct) UserService() dto.BaseResponseDto[*response.AllUserR
 	return dto.BaseResponseDto[*response.AllUserResponse]{
 		Result: dto.ResultResponseDto{
 			Flag:        1,
-			FlagMessage: "Success",
+			FlagMessage: helper.DATA_FOUND,
 		},
 		Data: allUserResponse,
 	}
@@ -49,7 +49,7 @@ func (s *UserServiceStruct) FetchUserProfileDetails(request request.FetchUserPro
 		return dto.BaseResponseDto[*response.UserBasicDetailsResponse]{
 			Result: dto.ResultResponseDto{
 				Flag:        0,
-				FlagMessage: err.Error(),
+				FlagMessage: helper.DATA_NO_FOUND,
 			},
 			Data: nil,
 		}
@@ -59,7 +59,7 @@ func (s *UserServiceStruct) FetchUserProfileDetails(request request.FetchUserPro
 	return dto.BaseResponseDto[*response.UserBasicDetailsResponse]{
 		Result: dto.ResultResponseDto{
 			Flag:        1,
-			FlagMessage: "Success",
+			FlagMessage: helper.DATA_FOUND,
 		},
 		Data: userProfile,
 	}

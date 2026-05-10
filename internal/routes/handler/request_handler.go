@@ -1,8 +1,9 @@
-package helper
+package handler
 
 import (
 	"fmt"
 	base_response "user-mapping/domain/dto"
+	"user-mapping/helper"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -77,7 +78,7 @@ func ValidationErrorToMessage(err error) string {
 	if errs, ok := err.(validator.ValidationErrors); ok {
 		for _, e := range errs {
 			key := fmt.Sprintf("%s.%s", e.Field(), e.Tag())
-			if msg, exists := customMessages[key]; exists {
+			if msg, exists := helper.CustomMessages[key]; exists {
 				return msg
 			}
 			// default fallback
