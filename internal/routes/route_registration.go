@@ -3,7 +3,6 @@ package routes
 import (
 	"user-mapping/api"
 	contract "user-mapping/domain/dto"
-	"user-mapping/helper"
 	"user-mapping/internal/container"
 	"user-mapping/internal/routes/handler"
 
@@ -29,7 +28,7 @@ type Route struct {
 }
 
 // CentralizedRoutes returns all routes for the app
-func CentralizedRoutes(services *container.ServiceContainer, jwtHelper *helper.JWT) []Route {
+func CentralizedRoutes(services *container.ServiceContainer) []Route {
 	return []Route{
 		{
 			Path:   "/login",

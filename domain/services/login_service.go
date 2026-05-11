@@ -6,25 +6,24 @@ import (
 	response "user-mapping/domain/dto/response/login"
 	"user-mapping/domain/interfaces"
 	"user-mapping/helper"
+	"user-mapping/internal/config"
 )
 
 type LoginServiceStruct struct {
 	iLoginService interfaces.ILoginService
-	jwtHelper     *helper.JWT
 }
 
-func NewLoginService(jwtHelper *helper.JWT, iLoginService interfaces.ILoginService) *LoginServiceStruct {
+func NewLoginService(iLoginService interfaces.ILoginService) *LoginServiceStruct {
 	return &LoginServiceStruct{
-		jwtHelper:     jwtHelper,
 		iLoginService: iLoginService,
 	}
 }
 
-func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestDto) dto.BaseResponseDto[*response.JWTResponse] {
+func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestDto) dto.BaseResponseDto[response.JWTResponse] {
 	isValid, err := s.iLoginService.VerifyUserRepo(Login)
 	if err != nil {
 		// Return failure response
-		return dto.BaseResponseDto[*response.JWTResponse]{
+		return dto.BaseResponseDto[response.JWTResponse]{
 			Result: dto.ResultResponseDto{
 				Flag:        0,
 				FlagMessage: helper.DATA_NO_FOUND,
@@ -34,7 +33,7 @@ func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestD
 	}
 
 	if !isValid {
-		return dto.BaseResponseDto[*response.JWTResponse]{
+		return dto.BaseResponseDto[response.JWTResponse]{
 			Result: dto.ResultResponseDto{
 				Flag:        0,
 				FlagMessage: helper.INVALID_CREDENTIALS,
@@ -44,10 +43,13 @@ func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestD
 	}
 
 	// User verified → create JWT
-	token, err := s.jwtHelper.CreateToken(map[string]interface{}{
+	token, err := helper.CreateToken(map[string]interface{}{
 		"userId": Login.Username,
 		"role":   "admin",
-	})
+	},
+		config.JWTConfig.Audience,
+		config.JWTConfig.Issuer, config.JWTConfig.Secret, config.JWTConfig.ExpiresInMinute,
+	)
 
 	resp := response.JWTResponse{
 		Token: token,

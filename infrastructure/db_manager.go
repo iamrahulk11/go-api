@@ -1,50 +1,91 @@
 package infrastructure
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
+	"user-mapping/internal/config"
 
-	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 )
 
-// SQLWrapper holds connection strings and can return DB connections dynamically
-type SQLWrapper struct {
-	connConfigs map[string]string
-	timeout     time.Duration
-	dbs         map[string]*sqlx.DB
-	mu          sync.Mutex
+type DBManager struct {
+	mu sync.RWMutex
+
+	configs map[string]config.DBConnConfig
+	pools   map[string]*sqlx.DB
 }
 
-// GetDB returns a *sqlx.DB for a connection name
-func (s *SQLWrapper) GetDB(driver string, name string) (*sqlx.DB, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+var (
+	instance *DBManager
+	once     sync.Once
+)
 
-	// return cached DB
-	if db, ok := s.dbs[name]; ok {
+func GetDBManager(cfg *config.DBConfig) *DBManager {
+	once.Do(func() {
+		instance = &DBManager{
+			configs: cfg.Connections,
+			pools:   make(map[string]*sqlx.DB),
+		}
+	})
+	return instance
+}
+
+func (m *DBManager) CloseAll() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	for name, db := range m.pools {
+		if err := db.Close(); err != nil {
+			return fmt.Errorf("error closing %s: %w", name, err)
+		}
+		delete(m.pools, name)
+	}
+
+	return nil
+}
+func (m *DBManager) OpenDB(driver, name string) (*sqlx.DB, error) {
+
+	// fast path (read lock)
+	m.mu.RLock()
+	db, ok := m.pools[name]
+	m.mu.RUnlock()
+
+	if ok {
 		return db, nil
 	}
 
-	conn, ok := s.connConfigs[name]
-	if !ok {
-		return nil, fmt.Errorf("connection name %s not found", name)
+	// write lock
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// double-check
+	if db, ok := m.pools[name]; ok {
+		return db, nil
 	}
 
-	db, err := sqlx.Connect(driver, conn)
+	cfg, exists := m.configs[name]
+	if !exists {
+		return nil, fmt.Errorf("db config not found: %s", name)
+	}
+
+	conn, err := sqlx.Open(driver, name)
 	if err != nil {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
-	defer cancel()
-
-	if err := db.PingContext(ctx); err != nil {
+	// verify connection
+	if err := conn.Ping(); err != nil {
 		return nil, err
 	}
 
-	return db, nil
+	// timeout handling
+	if cfg.Timeout > 0 {
+		conn.SetConnMaxLifetime(cfg.Timeout)
+	} else {
+		conn.SetConnMaxLifetime(30 * time.Second)
+	}
+
+	m.pools[name] = conn
+	return conn, nil
 }

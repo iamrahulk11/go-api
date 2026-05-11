@@ -1,57 +1,49 @@
 package repository
 
 import (
-	"database/sql"
 	"fmt"
 	response "user-mapping/domain/dto/response/user"
-	sqlwrapper "user-mapping/infrastructure"
+	"user-mapping/infrastructure"
 )
 
 type UserRepository struct {
-	SQL *sqlwrapper.SQLWrapper
+	sqlWrapper *infrastructure.SQLWrapper
 }
 
-func NewUserRepository(sqlWrapper *sqlwrapper.SQLWrapper) *UserRepository {
-	return &UserRepository{
-		SQL: sqlWrapper,
-	}
+func NewUserRepository(sql_wrapper *infrastructure.SQLWrapper) *UserRepository {
+	return &UserRepository{sqlWrapper: sql_wrapper}
 }
 
-func (r *UserRepository) FetchAllUser() (*response.AllUserResponse, error) {
+func (u *UserRepository) FetchAllUser() (*response.AllUserResponse, error) {
 	return &response.AllUserResponse{
 		Username: "rahul",
 	}, nil
 }
 
-func (r *UserRepository) FetchUserProfile(User_id string) (*response.UserBasicDetailsResponse, error) {
-	db, err := r.SQL.GetDB("sqlserver", "mt_infinity_conn")
-	if err != nil {
-		return nil, err
-	}
-
+func (u *UserRepository) FetchUserProfile(User_id string) ([]map[string]interface{}, error) {
 	const query = `
 		select employee_id username, employee_name name, employee_email email, employee_gender gender, is_active employement_status, employee_department department, employee_designation designation 
 		from adm_user_details where employee_id = :user_id
 	`
-	var resp response.UserBasicDetailsResponse
+
 	params := map[string]interface{}{
 		"user_id": User_id,
 	}
 
-	rows, err := db.NamedQuery(query, params)
+	result, err := u.sqlWrapper.ExecuteQuery("localDB", query, params)
 	if err != nil {
 		return nil, fmt.Errorf("fetch user profile query failed: %w", err)
 	}
 
-	defer rows.Close()
-	// handle no data
-	if !rows.Next() {
-		return nil, sql.ErrNoRows
-	}
-	// bind by column name
-	if err := rows.StructScan(&resp); err != nil {
-		return nil, fmt.Errorf("struct scan failed: %w", err)
-	}
+	// defer rows.Close()
+	// // handle no data
+	// if !rows.Next() {
+	// 	return nil, sql.ErrNoRows
+	// }
+	// // bind by column name
+	// if err := rows.StructScan(&resp); err != nil {
+	// 	return nil, fmt.Errorf("struct scan failed: %w", err)
+	// }
 
-	return &resp, nil
+	return result, nil
 }

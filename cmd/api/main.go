@@ -27,13 +27,13 @@ func main() {
 	}
 
 	// Initialize containers
-	serviceContainer, jwtHelper, err := container.InitializeContainers(cfg)
+	serviceContainer, err := container.InitializeContainers(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize containers: %v", err)
 	}
 
 	// Register routes
-	router := routes.RegisterAppRoutes(serviceContainer, jwtHelper)
+	router := routes.RegisterAppRoutes(serviceContainer)
 
 	// Use PORT from env first, fallback to config, then default
 	port := os.Getenv("PORT")

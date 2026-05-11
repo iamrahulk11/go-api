@@ -2,7 +2,6 @@ package routes
 
 import (
 	"net/http"
-	"user-mapping/helper"
 	"user-mapping/internal/container"
 	middlewares "user-mapping/internal/middleware"
 
@@ -15,7 +14,8 @@ type RouteRegistry struct {
 }
 
 // RegisterAppRoutes initializes router and registers all centralized routes
-func RegisterAppRoutes(services *container.ServiceContainer, jwtHelper *helper.JWT) *gin.Engine {
+func RegisterAppRoutes(services *container.ServiceContainer) *gin.Engine {
+
 	router := gin.New()
 
 	// global middlewares
@@ -23,17 +23,16 @@ func RegisterAppRoutes(services *container.ServiceContainer, jwtHelper *helper.J
 
 	registry := &RouteRegistry{}
 
-	allRoutes := CentralizedRoutes(services, jwtHelper)
+	allRoutes := CentralizedRoutes(services)
 
 	registry.Routes = append(registry.Routes, allRoutes...)
 
-	registry.RegisterAll(router, jwtHelper)
+	registry.RegisterAll(router)
 
 	return router
 }
 
-func (r *RouteRegistry) RegisterAll(router *gin.Engine, jwtHelper *helper.JWT) {
-
+func (r *RouteRegistry) RegisterAll(router *gin.Engine) {
 	for _, route := range r.Routes {
 
 		handlers := []gin.HandlerFunc{}
@@ -43,7 +42,7 @@ func (r *RouteRegistry) RegisterAll(router *gin.Engine, jwtHelper *helper.JWT) {
 
 		// auth middleware
 		if route.Auth {
-			handlers = append(handlers, middlewares.JWTMiddleware(jwtHelper))
+			handlers = append(handlers, middlewares.JWTMiddleware("default"))
 		}
 
 		// final handler

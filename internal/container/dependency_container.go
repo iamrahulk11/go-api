@@ -2,8 +2,7 @@ package container
 
 import (
 	"user-mapping/domain/services"
-	"user-mapping/helper"
-	sqlwrapper "user-mapping/infrastructure"
+	db "user-mapping/infrastructure"
 	"user-mapping/infrastructure/repository"
 	"user-mapping/internal/config"
 )
@@ -13,37 +12,25 @@ type ServiceContainer struct {
 	UserService  *services.UserServiceStruct
 }
 
-// InitializeConfig sets up configuration-dependent helpers
-func InitializeJwtAuth(cfg *config.AppConfig) *helper.JWT {
-	return &helper.JWT{
-		SecretKey:       cfg.JWT.Secret,
-		Issuer:          cfg.JWT.Issuer,
-		Audience:        cfg.JWT.Audience,
-		ExpiresInMinute: cfg.JWT.ExpiresInMinute,
-	}
-}
+func InitializeContainers(cfg *config.AppConfig) (*ServiceContainer, error) {
 
-func InitializeContainers(cfg *config.AppConfig) (*ServiceContainer, *helper.JWT, error) {
-	// JWT helper
-	jwtHelper := InitializeJwtAuth(cfg)
+	// 2. INFRASTRUCTURE CORE (SINGLETON)
+	dbManager := db.GetDBManager(&cfg.DBConfiguration)
 
-	// SQL wrapper
-	sqlWrapper, err := sqlwrapper.NewSQLWrapper(cfg)
-	if err != nil {
-		return nil, nil, err
-	}
+	// 3. WRAPPER (public API for repos)
+	sqlWrapper := db.NewSQLWrapper(dbManager)
 
 	// Register Repositories and Service
 	loginRepo := repository.NewLoginRepository(sqlWrapper)
-	loginService := services.NewLoginService(jwtHelper, loginRepo)
+	loginService := services.NewLoginService(loginRepo)
 
 	userRepo := repository.NewUserRepository(sqlWrapper)
-	userService := services.NewUserService(jwtHelper, userRepo)
+	userService := services.NewUserService(userRepo)
 
 	serviceContainer := &ServiceContainer{
 		LoginService: loginService,
 		UserService:  userService,
 	}
 
-	return serviceContainer, jwtHelper, nil
+	return serviceContainer, nil
 }
