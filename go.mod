@@ -40,9 +40,7 @@ require (
 require (
 	github.com/denisenkom/go-mssqldb v0.12.3
 	github.com/gin-gonic/gin v1.12.0
-	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-playground/validator/v10 v10.30.1
-	github.com/gorilla/schema v1.4.1
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.12.3
 )
