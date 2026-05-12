@@ -12,17 +12,13 @@ type ServiceContainer struct {
 	UserService  *services.UserServiceStruct
 }
 
-func InitializeContainers(cfg *config.AppConfig) (*ServiceContainer, error) {
-
-	// 2. INFRASTRUCTURE CORE (SINGLETON)
-	dbManager := db.GetDBManager(&cfg.DBConfiguration)
-
+func InitializeContainers(dbConnections *config.DBConnections, jwtConfig *config.JWTConfig) (*ServiceContainer, error) {
 	// 3. WRAPPER (public API for repos)
-	sqlWrapper := db.NewSQLWrapper(dbManager)
+	sqlWrapper := db.NewSQLWrapper(dbConnections)
 
 	// Register Repositories and Service
 	loginRepo := repository.NewLoginRepository(sqlWrapper)
-	loginService := services.NewLoginService(loginRepo)
+	loginService := services.NewLoginService(loginRepo, jwtConfig)
 
 	userRepo := repository.NewUserRepository(sqlWrapper)
 	userService := services.NewUserService(userRepo)

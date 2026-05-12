@@ -6,6 +6,10 @@ import (
 	"os"
 )
 
+type DBConfiguration struct {
+	Connections map[string]string
+}
+
 type JWTConfig struct {
 	Issuer          string `json:"Issuer"`
 	Audience        string `json:"Audience"`
@@ -14,10 +18,10 @@ type JWTConfig struct {
 }
 
 type AppConfig struct {
-	AppEnv          string    `json:"APP_ENV"`
-	Port            string    `json:"PORT"`
-	JWT             JWTConfig `json:"jwtConfiguration"`
-	DBConfiguration DBConfig  `json:"DBConfiguration"`
+	AppEnv          string          `json:"APP_ENV"`
+	Port            string          `json:"PORT"`
+	JWT             JWTConfig       `json:"jwtConfiguration"`
+	DBConfiguration DBConfiguration `json:"DBConfiguration"`
 }
 
 func LoadConfig(baseFilePath string) (*AppConfig, error) {

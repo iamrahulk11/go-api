@@ -4,16 +4,13 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	"user-mapping/internal/config"
 
 	"github.com/jmoiron/sqlx"
 )
 
 type DBManager struct {
-	mu sync.RWMutex
-
-	configs map[string]config.DBConnConfig
-	pools   map[string]*sqlx.DB
+	mu    sync.RWMutex
+	pools map[string]*sqlx.DB
 }
 
 var (
@@ -21,11 +18,10 @@ var (
 	once     sync.Once
 )
 
-func GetDBManager(cfg *config.DBConfig) *DBManager {
+func GetDBManager() *DBManager {
 	once.Do(func() {
 		instance = &DBManager{
-			configs: cfg.Connections,
-			pools:   make(map[string]*sqlx.DB),
+			pools: make(map[string]*sqlx.DB),
 		}
 	})
 	return instance
@@ -44,11 +40,11 @@ func (m *DBManager) CloseAll() error {
 
 	return nil
 }
-func (m *DBManager) OpenDB(driver, name string) (*sqlx.DB, error) {
+func (m *DBManager) OpenDB(driver, ConnectionString string, Timeout time.Duration) (*sqlx.DB, error) {
 
 	// fast path (read lock)
 	m.mu.RLock()
-	db, ok := m.pools[name]
+	db, ok := m.pools[ConnectionString]
 	m.mu.RUnlock()
 
 	if ok {
@@ -60,16 +56,11 @@ func (m *DBManager) OpenDB(driver, name string) (*sqlx.DB, error) {
 	defer m.mu.Unlock()
 
 	// double-check
-	if db, ok := m.pools[name]; ok {
+	if db, ok := m.pools[ConnectionString]; ok {
 		return db, nil
 	}
 
-	cfg, exists := m.configs[name]
-	if !exists {
-		return nil, fmt.Errorf("db config not found: %s", name)
-	}
-
-	conn, err := sqlx.Open(driver, name)
+	conn, err := sqlx.Open(driver, ConnectionString)
 	if err != nil {
 		return nil, err
 	}
@@ -80,12 +71,12 @@ func (m *DBManager) OpenDB(driver, name string) (*sqlx.DB, error) {
 	}
 
 	// timeout handling
-	if cfg.Timeout > 0 {
-		conn.SetConnMaxLifetime(cfg.Timeout)
+	if Timeout > 0 {
+		conn.SetConnMaxLifetime(Timeout)
 	} else {
 		conn.SetConnMaxLifetime(30 * time.Second)
 	}
 
-	m.pools[name] = conn
+	m.pools[ConnectionString] = conn
 	return conn, nil
 }

@@ -1,41 +1,29 @@
 package config
 
 import (
-	"fmt"
 	"time"
 )
 
-type DBConnConfig struct {
-	Driver  string
-	DSN     string
-	Timeout time.Duration
+type DBConn struct {
+	ConnectionString string
+	Timeout          time.Duration
 }
 
-type DBConfig struct {
-	Connections map[string]DBConnConfig
+type DBConnections struct {
+	Connections map[string]DBConn
 }
 
-// DatabaseConnectionConfig creates a wrapper from AppConfig
-func NewDBConfig(connections map[string]DBConnConfig) *DBConfig {
-	return &DBConfig{
-		Connections: connections,
-	}
-}
+func (c DBConfiguration) MapDBConnections() *DBConnections {
+	dbConnections := make(map[string]DBConn)
 
-// GetConnectionString returns the connection string for a given DB name
-func (d *DBConfig) GetConnectionString(name string) (string, error) {
-	conn, exists := d.Connections[name]
-	if !exists {
-		return "", fmt.Errorf("connection config not found for: %s", name)
+	for key, connStr := range c.Connections {
+		dbConnections[key] = DBConn{
+			ConnectionString: connStr,
+			Timeout:          30 * time.Second,
+		}
 	}
 
-	return conn.DSN, nil
-}
-
-func (d *DBConfig) Timeout(name string) (time.Duration, error) {
-	conn, exists := d.Connections[name]
-	if !exists {
-		return 0, fmt.Errorf("connection config not found for: %s", name)
+	return &DBConnections{
+		Connections: dbConnections,
 	}
-	return conn.Timeout, nil
 }

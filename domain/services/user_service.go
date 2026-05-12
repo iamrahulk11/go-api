@@ -3,7 +3,6 @@ package services
 import (
 	"user-mapping/domain/dto"
 	request "user-mapping/domain/dto/requests/user"
-	response "user-mapping/domain/dto/response/user"
 	"user-mapping/domain/interfaces"
 	"user-mapping/helper"
 )
@@ -18,11 +17,11 @@ func NewUserService(iUserService interfaces.IUserService) *UserServiceStruct {
 	}
 }
 
-func (s *UserServiceStruct) UserService() dto.BaseResponseDto[response.AllUserResponse] {
+func (s *UserServiceStruct) UserService() dto.BaseResponseDto[[]map[string]interface{}] {
 	allUserResponse, err := s.iUserService.FetchAllUser()
+
 	if err != nil {
-		// Return failure response
-		return dto.BaseResponseDto[response.AllUserResponse]{
+		return dto.BaseResponseDto[[]map[string]interface{}]{
 			Result: dto.ResultResponseDto{
 				Flag:        0,
 				FlagMessage: helper.DATA_NO_FOUND,
@@ -32,7 +31,7 @@ func (s *UserServiceStruct) UserService() dto.BaseResponseDto[response.AllUserRe
 	}
 
 	// Return success response
-	return dto.BaseResponseDto[response.AllUserResponse]{
+	return dto.BaseResponseDto[[]map[string]interface{}]{
 		Result: dto.ResultResponseDto{
 			Flag:        1,
 			FlagMessage: helper.DATA_FOUND,
@@ -40,11 +39,11 @@ func (s *UserServiceStruct) UserService() dto.BaseResponseDto[response.AllUserRe
 		Data: allUserResponse,
 	}
 }
-func (s *UserServiceStruct) FetchUserProfileDetails(request request.FetchUserProfileRequestDto) dto.BaseResponseDto[response.UserBasicDetailsResponse] {
+func (s *UserServiceStruct) FetchUserProfileDetails(request request.FetchUserProfileRequestDto) dto.BaseResponseDto[[]map[string]interface{}] {
 	userProfile, err := s.iUserService.FetchUserProfile(request.EmployeeID)
 	if err != nil {
 		// Return failure response
-		return dto.BaseResponseDto[response.UserBasicDetailsResponse]{
+		return dto.BaseResponseDto[[]map[string]interface{}]{
 			Result: dto.ResultResponseDto{
 				Flag:        0,
 				FlagMessage: helper.DATA_NO_FOUND,
@@ -54,7 +53,7 @@ func (s *UserServiceStruct) FetchUserProfileDetails(request request.FetchUserPro
 	}
 
 	// Return success response
-	return dto.BaseResponseDto[response.UserBasicDetailsResponse]{
+	return dto.BaseResponseDto[[]map[string]interface{}]{
 		Result: dto.ResultResponseDto{
 			Flag:        1,
 			FlagMessage: helper.DATA_FOUND,

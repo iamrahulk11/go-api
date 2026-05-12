@@ -2,7 +2,7 @@ package dto
 
 type BaseResponseDto[T any] struct {
 	Result ResultResponseDto `json:"result"`
-	Data   T                 `json:"data,omitempty"`
+	Data   T                 `json:"data"`
 }
 
 type ResultResponseDto struct {

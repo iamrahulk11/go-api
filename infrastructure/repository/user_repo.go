@@ -2,7 +2,6 @@ package repository
 
 import (
 	"fmt"
-	response "user-mapping/domain/dto/response/user"
 	"user-mapping/infrastructure"
 )
 
@@ -14,10 +13,14 @@ func NewUserRepository(sql_wrapper *infrastructure.SQLWrapper) *UserRepository {
 	return &UserRepository{sqlWrapper: sql_wrapper}
 }
 
-func (u *UserRepository) FetchAllUser() (*response.AllUserResponse, error) {
-	return &response.AllUserResponse{
-		Username: "rahul",
-	}, nil
+func (u *UserRepository) FetchAllUser() ([]map[string]interface{}, error) {
+	mapin := []map[string]interface{}{
+		{
+			"Username": "rahul",
+		},
+	}
+
+	return mapin, nil
 }
 
 func (u *UserRepository) FetchUserProfile(User_id string) ([]map[string]interface{}, error) {

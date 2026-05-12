@@ -25,15 +25,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
+	// Build DB connections (runtime layer)
+	dbConnections := cfg.DBConfiguration.MapDBConnections()
 
 	// Initialize containers
-	serviceContainer, err := container.InitializeContainers(cfg)
+	serviceContainer, err := container.InitializeContainers(dbConnections, &cfg.JWT)
 	if err != nil {
 		log.Fatalf("Failed to initialize containers: %v", err)
 	}
 
 	// Register routes
-	router := routes.RegisterAppRoutes(serviceContainer)
+	router := routes.RegisterAppRoutes(serviceContainer, &cfg.JWT)
 
 	// Use PORT from env first, fallback to config, then default
 	port := os.Getenv("PORT")

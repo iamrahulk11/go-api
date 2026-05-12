@@ -13,7 +13,7 @@ func NewLoginRepository(db *infrastructure.SQLWrapper) *LoginRepository {
 	return &LoginRepository{db: db}
 }
 
-func VerifyUserRepo(Login request.VerifyLoginRequestDto) (bool, error) {
+func (s LoginRepository) VerifyUserRepo(Login request.VerifyLoginRequestDto) (bool, error) {
 	if Login.Username == "admin" && Login.Password == "123" {
 		return true, nil
 	}

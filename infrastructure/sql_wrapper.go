@@ -3,15 +3,16 @@ package infrastructure
 import (
 	"context"
 	"database/sql"
+	"user-mapping/internal/config"
 
 	_ "github.com/denisenkom/go-mssqldb"
 )
 
 type SQLWrapper struct {
-	manager *DBManager
+	manager *config.DBConnections
 }
 
-func NewSQLWrapper(m *DBManager) *SQLWrapper {
+func NewSQLWrapper(m *config.DBConnections) *SQLWrapper {
 	return &SQLWrapper{
 		manager: m,
 	}
@@ -19,7 +20,11 @@ func NewSQLWrapper(m *DBManager) *SQLWrapper {
 
 // Example: Execute a query with parameters
 func (s *SQLWrapper) ExecuteQuery(connName string, sqlQuery string, params map[string]interface{}) ([]map[string]interface{}, error) {
-	db, err := s.manager.OpenDB("mssql", connName)
+	connString := s.manager.Connections[connName].ConnectionString
+	timeout := s.manager.Connections[connName].Timeout
+
+	dbM := GetDBManager()
+	db, err := dbM.OpenDB("mssql", connString, timeout)
 	if err != nil {
 		return nil, err
 	}

@@ -11,11 +11,13 @@ import (
 
 type LoginServiceStruct struct {
 	iLoginService interfaces.ILoginService
+	jwtConfig     *config.JWTConfig
 }
 
-func NewLoginService(iLoginService interfaces.ILoginService) *LoginServiceStruct {
+func NewLoginService(iLoginService interfaces.ILoginService, jwtConfiguration *config.JWTConfig) *LoginServiceStruct {
 	return &LoginServiceStruct{
 		iLoginService: iLoginService,
+		jwtConfig:     jwtConfiguration,
 	}
 }
 
@@ -28,7 +30,6 @@ func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestD
 				Flag:        0,
 				FlagMessage: helper.DATA_NO_FOUND,
 			},
-			Data: nil,
 		}
 	}
 
@@ -38,7 +39,6 @@ func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestD
 				Flag:        0,
 				FlagMessage: helper.INVALID_CREDENTIALS,
 			},
-			Data: nil,
 		}
 	}
 
@@ -47,8 +47,8 @@ func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestD
 		"userId": Login.Username,
 		"role":   "admin",
 	},
-		config.JWTConfig.Audience,
-		config.JWTConfig.Issuer, config.JWTConfig.Secret, config.JWTConfig.ExpiresInMinute,
+		s.jwtConfig.Audience,
+		s.jwtConfig.Issuer, s.jwtConfig.Secret, s.jwtConfig.ExpiresInMinute,
 	)
 
 	resp := response.JWTResponse{
@@ -56,11 +56,11 @@ func (s *LoginServiceStruct) VerifyUserService(Login request.VerifyLoginRequestD
 	}
 
 	// Return success response
-	return dto.BaseResponseDto[*response.JWTResponse]{
+	return dto.BaseResponseDto[response.JWTResponse]{
 		Result: dto.ResultResponseDto{
 			Flag:        1,
 			FlagMessage: helper.DATA_FOUND,
 		},
-		Data: &resp,
+		Data: resp,
 	}
 }
